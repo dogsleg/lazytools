@@ -169,6 +169,9 @@ def check_status():
         return
     cvs_status = out.split('\n')
     for entry in cvs_status:
+	if 'Status' in entry:
+            if 'Unknown' in entry.split()[-1]:
+                return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
                 print 'ERROR: An old translation exists in the Attic, you should restore it using:'
