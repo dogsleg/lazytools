@@ -19,9 +19,9 @@
 #
 ########################################################################
 #
-# Configuration file should have a section [lazycopy] and can contain the
+# Configuration file should have a section [lazycopy] and may contain the
 # following options: language, maintainer, editor, temp_dir, diff_args.
-# Some of these options can be empty (editor and temp_dir options in
+# Some of these options can be empty (as editor and temp_dir options in
 # the following example).
 #
 # Command-line arguments override options in the configuration file. If
@@ -44,33 +44,28 @@
 #
 ########################################################################
 
-_version_ = '0.1.0'
+_version_ = '0.1.1'
 
 import argparse
-import ConfigParser
 import sys
 import os
 import subprocess
 
+if sys.version_info < (3, 0):
+    import ConfigParser as configparser
+else:
+    import configparser
+
 # Command-line arguments parser
 
-parser = argparse.ArgumentParser(description="Copies the specified page \
-to the corresponding directory of the specified language and adds the \
-translation-check header with the current revision, optionally adds also \
-the maintainer name. If the directory does not exist, it will be created, \
-and the Makefile created. If the translation of the file already \
-exists in the target language directory either because it was removed (and \
-is in the Attic) or has been removed locally the program will abort and \
-warn the user (unless '-nu' is used)")
+parser = argparse.ArgumentParser(description="Copies the specified page to the corresponding directory of the specified language and adds the translation-check header with the current revision, optionally adds also the maintainer name. If the directory does not exist, it will be created, and the Makefile created. If the translation of the file already exists in the target language directory either because it was removed (and is in the Attic) or has been removed locally the program will abort and warn the user (unless '-nu' is used)")
 
 parser.add_argument('path', metavar='path', type=str,
                     help='Sets file for the translation')
 parser.add_argument('-l', '--language',  metavar='LANGUAGE', type=str,
-                    help='''Sets language for the translation.
-                    Overrides configuration file.''')
+                    help='''Sets language for the translation. Overrides configuration file.''')
 parser.add_argument('-m', '--maintainer', metavar='MAINTAINER', type=str,
-                    help='Sets maintainer for the translation.\
-                    Overrides configuration file.')
+                    help='Sets maintainer for the translation. Overrides configuration file.')
 parser.add_argument('-e', '--editor', metavar='EDITOR', type=str,
                     help='Sets editor')
 parser.add_argument('-t', '--temp_dir', metavar='TEMP_DIR', type=str,
@@ -78,16 +73,13 @@ parser.add_argument('-t', '--temp_dir', metavar='TEMP_DIR', type=str,
 parser.add_argument('-d', '--diff_args', metavar='DIFF_ARGS', type=str,
                     help='Sets diff arguments')
 parser.add_argument('-nc', '--not-check', action='store_const', const=True,
-                    default=False, help='Does not check status of target \
-                    files in CVS')
+                    default=False, help='Does not check status of target files in CVS')
 parser.add_argument('-nu', '--not-update', action='store_const', const=True,
                     default=False, help='Does not update specified')
 parser.add_argument('-ne', '--not-edit', action='store_const', const=True,
-                    default=False, help='Does not run editor and produce \
-                    patch, just copy the file')
+                    default=False, help='Does not run editor and produce patch, just copy the file')
 parser.add_argument('-nd', '--not-diff', action='store_const', const=True,
-                    default=False, help='Does not produce patch, just copy \
-                    the file and edit it')
+                    default=False, help='Does not produce patch, just copy the file and edit it')
 
 args = parser.parse_args()
 
@@ -101,12 +93,10 @@ if 'wml' not in path_list[-1] and 'src' not in path_list[-1]:
 # Configuration
 
 if os.path.exists('lazycopy.conf'):
-    config = ConfigParser.RawConfigParser()
+    config = configparser.RawConfigParser()
     config.read('lazycopy.conf')
 else:
-    print('Configuration file lazycopy.conf not found. You can specify \
-          lazycopy your default option in it, instead of using arguments \
-          all the time.')
+    print('Configuration file lazycopy.conf not found. You can specify lazycopy your default option in it, instead of using arguments all the time.')
 
 target_language = args.language or config.get('lazycopy', 'language')
 
@@ -125,22 +115,18 @@ if not editor:
     if os.path.exists('/usr/bin/editor'):
         editor = '/usr/bin/editor'
     else:
-        print("Editor is not specified, symlink /usr/bin/editor doesn't \
-              exits, not running editor. Use update-alternatives or \
-              specify editor in configuration file of by argument.")
+        print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor. Use update-alternatives or specify editor in configuration file of by argument.")
 
 temp_dir = args.temp_dir or config.get('lazycopy', 'temp_dir')
 
 if not temp_dir:
-    print('Using /tmp as temporary directory. You can specify temporary \
-          directory in configuration file or by argument.')
+    print('Using /tmp as temporary directory. You can specify temporary directory in configuration file or by argument.')
     temp_dir = '/tmp'
 
 diff_args = args.diff_args or config.get('lazycopy', 'diff_args')
 
 if not diff_args:
-    print('Will prepare unified diff. You can specify diff arguments in \
-          configuration file or by argument.')
+    print('Will prepare unified diff. You can specify diff arguments in configuration file or by argument.')
     diff_args = '-u'
 
 target_path = target_language + '/' + '/'.join(path_list[1:-1])
@@ -162,7 +148,7 @@ def make_title():
     return title
 
 def check_status():
-    print 'Checking status of ' + target_file
+    print(('Checking status of ' + target_file))
     cvs = subprocess.Popen(['cvs', 'status', target_file], stdout=subprocess.PIPE)
     out, err = cvs.communicate()
     if cvs.returncode:
@@ -174,16 +160,16 @@ def check_status():
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print 'ERROR: An old translation exists in the Attic, you should restore it using:'
-                print 'cvs update -j DELETED -j PREVIOUS' + target_file
-                print '[Edit and update the file]'
-                print 'cvs ci ' + target_file
+                print('ERROR: An old translation exists in the Attic, you should restore it using:')
+                print(('cvs update -j DELETED -j PREVIOUS' + target_file))
+                print('[Edit and update the file]')
+                print(('cvs ci ' + target_file))
                 return
     print("ERROR: A translation already exists in CVS for this file.")
     print("Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
     
-print 'Copying ' + args.path
+print(('Copying ' + args.path))
 if not os.path.exists(args.path):
     print('ERROR: specified file does not exist.')
     sys.exit(1)
@@ -196,7 +182,7 @@ if not os.path.exists(target_makefile):
     makefile.write('include $(subst webwml/' + target_language + ',webwml/english,$(CURDIR))/Makefile\n')
     makefile.close()
 if not args.not_update:
-    print 'Updating specified file.'
+    print('Updating specified file.')
     subprocess.call(['cvs', 'update', args.path])
 src_file = open(args.path, 'r')
 dest_file = open(target_file, 'w')
@@ -213,10 +199,10 @@ for line in src_file_contents:
 dest_file.close()
 
 if not args.not_edit:
-    print('Running editor to edit ' + target_file)
+    print(('Running editor to edit ' + target_file))
     subprocess.call([editor, target_file])
 
 if not args.not_diff:
     diff_string = 'diff ' + diff_args + ' ' + args.path + ' ' + target_file + ' > ' +  patch_file
-    print('Running ' + diff_string)
+    print(('Running ' + diff_string))
     subprocess.call(diff_string, shell=True)
