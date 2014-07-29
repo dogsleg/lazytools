@@ -44,7 +44,7 @@
 #
 ########################################################################
 
-_version_ = '0.1.1'
+_version_ = '0.1.2'
 
 import argparse
 import sys
@@ -72,6 +72,8 @@ parser.add_argument('-t', '--temp_dir', metavar='TEMP_DIR', type=str,
                     help='Sets temporary directory')
 parser.add_argument('-d', '--diff_args', metavar='DIFF_ARGS', type=str,
                     help='Sets diff arguments')
+parser.add_argument('-f', '--list-file', metavar='LIST_FILE', type=str,
+                    help='Sets list file')
 parser.add_argument('-nc', '--not-check', action='store_const', const=True,
                     default=False, help='Does not check status of target files in CVS')
 parser.add_argument('-nu', '--not-update', action='store_const', const=True,
@@ -129,9 +131,16 @@ if not diff_args:
     print('Will prepare unified diff. You can specify diff arguments in configuration file or by argument.')
     diff_args = '-u'
 
+list_file = args.list_file or config.get('lazycopy', 'list_file')
+
+if not list_file:
+    print('Using /tmp/webwml_list.tmp as a list file. You can specify list file in configuration file or by argument.')
+    list_file = '/tmp/webwml_list.tmp'
+    
 target_path = target_language + '/' + '/'.join(path_list[1:-1])
 target_file = target_path + '/' + path_list[-1]
 patch_file = '/tmp/' + "_".join(path_list[1:]) + '.' + args.path[:2] + '_' + target_language[:2] + '.patch'
+list_file_entry = '/'.join(path_list[1:])
 source_makefile = '/'.join(path_list[:-1]) + '/Makefile'
 target_makefile = target_language + '/' + '/'.join(path_list[1:-1]) + '/Makefile'
 
@@ -206,3 +215,17 @@ if not args.not_diff:
     diff_string = 'diff ' + diff_args + ' ' + args.path + ' ' + target_file + ' > ' +  patch_file
     print(('Running ' + diff_string))
     subprocess.call(diff_string, shell=True)
+
+if os.path.exists(list_file):
+    print(('Adding new entry to list file.'))
+    tmp_list_file = open(list_file, 'r')
+    tmp_list_file_raw_content = tmp_list_file.read()
+    tmp_list_file.close()
+    tmp_list_file = open(list_file, 'w')
+    tmp_list_file_content = tmp_list_file_raw_content.split('}')
+    tmp_list_file.write(''.join(tmp_list_file_content[:-1]) + ',' + list_file_entry + '}\n')
+else:
+    print(('Creating a new list file.'))
+    tmp_list_file = open(list_file, 'w')
+    tmp_list_file.write('wml://{' + list_file_entry + '}\n')
+tmp_list_file.close()
