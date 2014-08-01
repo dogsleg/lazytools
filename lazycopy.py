@@ -44,7 +44,7 @@
 #
 ########################################################################
 
-_version_ = '0.1.2'
+_version_ = '0.2.0'
 
 import argparse
 import sys
@@ -216,16 +216,69 @@ if not args.not_diff:
     print(('Running ' + diff_string))
     subprocess.call(diff_string, shell=True)
 
+def simplify(data):
+    matched = ''
+    nonmatched = []
+    nonmatch_num = -1
+    for num in range(len(data[1]) - 1):
+        simplification = False
+        for item in data[0:]:
+            if len(item) - 1 >= num:
+                if  data[1][num] == item[num]:
+                    simplification = True
+                elif data[1][num] != item[num]:
+                    simplification = False
+                    nonmatch_num = num
+                    break
+        if simplification:
+            matched = matched + data[1][num]
+        else:
+            break
+    for item in data:
+        nonmatched.append(item[nonmatch_num:])
+    return matched, nonmatched
+
+def reverse(list_str):
+    pre_output = []
+    for entry in list_str[1]:
+        pre_output.append(entry[::-1])
+    reverse_simplified = simplify(pre_output)
+    output_str = ''
+    for entry in reverse_simplified:
+        if isinstance(entry, str):
+            output_str = output_str + entry[::-1]
+        elif isinstance(entry, list):
+            output_lst = []
+            for item in entry:
+                output_lst.append(item[::-1])
+    return output_lst, output_str
+
 if os.path.exists(list_file):
     print(('Adding new entry to list file.'))
     tmp_list_file = open(list_file, 'r')
-    tmp_list_file_raw_content = tmp_list_file.read()
+    raw_data = tmp_list_file.read().split('{')
+
+    raw_data[1] = raw_data[1][:-1]
+    raw_data[1] = raw_data[1].split('}')
+    raw_data.append(raw_data[1].pop(1))
+
+    expanded_data = []
+
+    for entry in raw_data[1][0].split(','):
+        expanded_data.append(raw_data[0] + entry + raw_data[2])
+
+    expanded_data.append(list_file_entry)
+    
+    result = ''
+    result = result + simplify(expanded_data)[0] + '{' + ','.join(reverse(simplify(expanded_data))[0]) + '}' + reverse(simplify(expanded_data))[1] + '\n'
+
     tmp_list_file.close()
     tmp_list_file = open(list_file, 'w')
-    tmp_list_file_content = tmp_list_file_raw_content.split('}')
-    tmp_list_file.write(''.join(tmp_list_file_content[:-1]) + ',' + list_file_entry + '}\n')
+    tmp_list_file.write(result)
+    print result
 else:
     print(('Creating a new list file.'))
     tmp_list_file = open(list_file, 'w')
     tmp_list_file.write('wml://{' + list_file_entry + '}\n')
+
 tmp_list_file.close()
