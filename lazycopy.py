@@ -3,7 +3,7 @@
 #
 # lazycopy -- lazy copy tool for Debian webwml repository
 #
-# Copyright (C) 2013-2014  Lev Lamberov <l.lamberov@gmail.com>
+# Copyright (C) 2013  Lev Lamberov <l.lamberov@gmail.com>
 #
 # This program is licensed under the GNU General Public License (GPL).
 # you can redistribute it and/or modify it under the terms of the GNU
@@ -44,7 +44,7 @@
 #
 ########################################################################
 
-_version_ = '0.2.0'
+_version_ = '0.2.1'
 
 import argparse
 import sys
@@ -256,7 +256,7 @@ def reverse(list_str):
 if os.path.exists(list_file):
     print(('Adding new entry to list file.'))
     tmp_list_file = open(list_file, 'r')
-    raw_data = tmp_list_file.read().split('{')
+    raw_data = tmp_list_file.read()[6:].split('{')
 
     raw_data[1] = raw_data[1][:-1]
     raw_data[1] = raw_data[1].split('}')
@@ -269,16 +269,16 @@ if os.path.exists(list_file):
 
     expanded_data.append(list_file_entry)
     
-    result = ''
-    result = result + simplify(expanded_data)[0] + '{' + ','.join(reverse(simplify(expanded_data))[0]) + '}' + reverse(simplify(expanded_data))[1] + '\n'
+    result = 'wml://' + simplify(expanded_data)[0] + '{' + ','.join(reverse(simplify(expanded_data))[0]) + '}' + reverse(simplify(expanded_data))[1] + '\n'
 
     tmp_list_file.close()
-    tmp_list_file = open(list_file, 'w')
-    tmp_list_file.write(result)
-    print result
 else:
     print(('Creating a new list file.'))
     tmp_list_file = open(list_file, 'w')
-    tmp_list_file.write('wml://{' + list_file_entry + '}\n')
+    result = 'wml://{' + list_file_entry + '}\n'
 
+print(('Resulting list file string is as follows.'))
+print(result)
+tmp_list_file = open(list_file, 'w')
+tmp_list_file.write(result)
 tmp_list_file.close()
