@@ -10,4 +10,4 @@ This script copies the file named on the command line to the translation, and ad
 
 ## lazytodo
 
-This script downloads website translation status webpage for specified language and produce a sorted list of untranslated webpages.
+This script downloads website translation status webpage for specified language and produce a sorted (sorts on filesize) list of untranslated webpages.
