@@ -16,18 +16,17 @@
 #
 ########################################################################
 
-_VERSION_ = '0.0.3'
+_VERSION_ = '0.0.4'
 
 import argparse
 import sys
 from urllib.request import urlopen
 from html.parser import HTMLParser
 
-CONTENT = []
-
 class MyHTMLParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
+        self.content = []
         self.pick_data = False
         self.to_get = False
         
@@ -50,7 +49,7 @@ class MyHTMLParser(HTMLParser):
 
     def handle_data(self, data):
         if self.pick_data:
-            CONTENT.append((self.current_link, int(data)))
+            self.content.append((self.current_link, int(data)))
             self.pick_data = False
 
     def get_link(self, tag, attrs):
@@ -59,6 +58,9 @@ class MyHTMLParser(HTMLParser):
             self.passed_a = True
         if tag == 'td' and ('align', 'right') in attrs:
             self.pick_data = True
+
+    def get_contents(self):
+        return self.content
 
 def quicksort(list):
     """Quicksort using list comprehensions"""
@@ -99,8 +101,8 @@ if __name__ == '__main__':
     HTML_PARSER.feed(HTML)
     
     if ARGS.reverse:                    
-        for entity in reversed(quicksort(CONTENT)):
+        for entity in reversed(quicksort(HTML_PARSER.get_contents())):
             print(entity)
     else:
-        for entity in quicksort(CONTENT):
+        for entity in quicksort(HTML_PARSER.get_contents()):
             print(entity)
