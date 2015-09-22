@@ -23,6 +23,7 @@ import sys
 from urllib.request import urlopen
 from html.parser import HTMLParser
 
+
 class MyHTMLParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
@@ -62,6 +63,7 @@ class MyHTMLParser(HTMLParser):
     def get_contents(self):
         return self.content
 
+    
 def quicksort(list):
     """Quicksort using list comprehensions"""
     if list == []: 
@@ -72,10 +74,12 @@ def quicksort(list):
         greater = quicksort([x for x in list[1:] if x[1] >= pivot[1]])
         return lesser + [pivot] + greater
 
+    
 if __name__ == '__main__':
-    PARSER = argparse.ArgumentParser(description="Show sorted list of untranslated pages for specified language")
+    PARSER = argparse.ArgumentParser(description="Show sorted list of\
+                                     untranslated pages for specified language")
     PARSER.add_argument('language', metavar='language', type=str,
-                        help='''Sets language''')
+                        help='''Set language''')
     PARSER.add_argument('-ng', '--no-general', action='store_const', const=True,
                         default=False,
                         help='Do not include general pages')
