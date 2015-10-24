@@ -56,67 +56,72 @@ class Configuration():
     def __init__(self, args):
         self.path = args.path
         self.check_target_file()
-        
+        self.no_check = args.no_check
+        self.no_update = args.no_update
+        self.no_edit = args.no_edit
+        self.no_diff = args.no_diff
+
+        self.configure()
+        self.lang_code = self.target_lang[:2]
+
+        self.path_lst = self.path.split('/')
+        self.path_lst2 = self.path_lst[1:]
+        self.target_path = self.target_lang + '/' + '/'.join(self.path_lst[1:-1])
+        self.target_file = self.target_path + '/' + self.path_lst[-1]
+        self.path_file = '/tmp/' + "_".join(self.path_lst2) + '.' + self.path[:2] + '_' + self.lang_code + '.patch'
+        self.lst_file_entry = '/'.join(self.path_lst2)
+        self.source_makefile = '/'.join(self.path_lst[:-1]) + '/Makefile'
+        self.target_makefile = self.target_lang + '/' + '/'.join(self.path_lst[1:-1]) + '/Makefile'
+
+    def configure(self):
         if os.path.exists('lazycopy.conf'):
             cfg_file = configparser.RawConfigParser()
             cfg_file.read('lazycopy.conf')
         else:
-            print('Configuration file lazycopy.conf not found. You can specify lazycopy your default option in it, instead of using arguments all the time.')
+            print('Configuration file lazycopy.conf not found.')
 
-        self.target_language = args.language or cfg_file.get('lazycopy', 'language')
-        if not self.target_language:
-            print('ERROR: specify target language in configuration file or by argument.')
+        self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
+        if not self.target_lang:
+            print('ERROR: specify target language in configuration file or with argument.')
             sys.exit(1)
 
         self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
-            print('You can specify maintainer in configuration file or by argument.')
+            print('You can specify maintainer in configuration file or with argument.')
 
         self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
         if not self.editor:
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
-                print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor. Use update-alternatives or specify editor in configuration file of by argument.")
+                print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor.")
 
         self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
         if not self.temp_dir:
-            print('Using /tmp as temporary directory. You can specify temporary directory in configuration file or by argument.')
+            print('Using /tmp as temporary directory.')
             self.temp_dir = '/tmp'
 
         self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
         if not self.diff_args:
-            print('Will prepare unified diff. You can specify diff arguments in configuration file or by argument.')
+            print('Will prepare unified diff.')
             self.diff_args = '-u'
 
         self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
         if not self.list_file:
-            print('Using /tmp/webwml_list.tmp as a list file. You can specify list file in configuration file or by argument.')
+            print('Using /tmp/webwml_list.tmp as a list file.')
             self.list_file = '/tmp/webwml_list.tmp'
-
-        self.no_check = args.no_check
-        self.no_update = args.no_update
-        self.no_edit = args.no_edit
-        self.no_diff = args.no_diff
-
-        TARGET_PATH = TARGET_LANGUAGE + '/' + '/'.join(PATH_LIST[1:-1])
-        TARGET_FILE = TARGET_PATH + '/' + PATH_LIST[-1]
-        PATH_FILE = '/tmp/' + "_".join(PATH_LIST[1:]) + '.' + ARGS.path[:2] + '_' + TARGET_LANGUAGE[:2] + '.patch'
-        LIST_FILE_ENTRY = '/'.join(PATH_LIST[1:])
-        SOURCE_MAKEFILE = '/'.join(PATH_LIST[:-1]) + '/Makefile'
-        TARGET_MAKEFILE = TARGET_LANGUAGE + '/' + '/'.join(PATH_LIST[1:-1]) + '/Makefile'
-
+        
     def check_target_file(self):
         # Check specified file to be a valid (wml, src) page
-        PATH_LIST = self.path.split('/')
-        if 'wml' not in PATH_LIST[-1] and 'src' not in PATH_LIST[-1]:
+        self.path_lst = self.path.split('/')
+        if 'wml' not in self.path_lst[-1] and 'src' not in self.path_lst[-1]:
             print("ERROR: specified file doesn't seem to be a valid page.")
             sys.exit(1)
             
     def revision_number(self):
-        cvs_entries_file = open('/'.join(PATH_LIST[:-1]) + '/CVS/Entries', 'r')
+        cvs_entries_file = open('/'.join(self.path_lst[:-1]) + '/CVS/Entries', 'r')
         for line in cvs_entries_file:
-            if PATH_LIST[-1] in line:
+            if self.path_lst[-1] in line:
                 return line.split('/')[2]
 
     def make_title(self):
@@ -126,7 +131,7 @@ class Configuration():
         return title
 
     def make_Makefile(self):
-        return 'include $(subst webwml/' + self.target_language + ',webwml/english,$(CURDIR))/Makefile\n'
+        return 'include $(subst webwml/' + self.target_lang + ',webwml/english,$(CURDIR))/Makefile\n'
     
     def make_diff(self):
         self.diff_string = 'diff ' + self.diff_args + ' ' + self.path + ' ' + self.target_file + ' > ' +  self.path_file
@@ -154,12 +159,6 @@ def check_status(target_file):
     print("ERROR: A translation already exists in CVS for this file.")
     print("Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
-
-def check_existence(file):
-    if os.path.exists(file):
-        return True
-    else:
-        return False
 
 def copy_original(config):
     print(('Copying ' + config.get_patch()))
@@ -287,4 +286,6 @@ if __name__ == '__main__':
                     help='Does not produce patch')
 
     config = Configuration(PARSER.parse_args())
+
+    
 
