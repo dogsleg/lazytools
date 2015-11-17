@@ -54,17 +54,13 @@ import configparser
 
 class Configuration():
     def __init__(self, args):
-        self.args = args
         self.path = args.path
         self.check_target_file()
         self.no_check = args.no_check
         self.no_update = args.no_update
         self.no_edit = args.no_edit
         self.no_diff = args.no_diff
-
-        self.configure()
         self.lang_code = self.target_lang[:2]
-
         self.path_lst = self.path.split('/')
         self.path_lst2 = self.path_lst[1:]
         self.target_path = self.target_lang + '/' + '/'.join(self.path_lst[1:-1])
@@ -73,45 +69,44 @@ class Configuration():
         self.lst_file_entry = '/'.join(self.path_lst2)
         self.source_makefile = '/'.join(self.path_lst[:-1]) + '/Makefile'
         self.target_makefile = self.target_lang + '/' + '/'.join(self.path_lst[1:-1]) + '/Makefile'
-
-    def configure(self):
+        
         if os.path.exists('lazycopy.conf'):
             cfg_file = configparser.RawConfigParser()
             cfg_file.read('lazycopy.conf')
         else:
             print('Configuration file lazycopy.conf not found.')
 
-        self.target_lang = self.args.language or cfg_file.get('lazycopy', 'language')
+        self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
         if not self.target_lang:
             print('ERROR: specify target language in configuration file or with argument.')
             sys.exit(1)
 
-        self.maintainer = self.args.maintainer or cfg_file.get('lazycopy', 'maintainer')
+        self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
             print('You can specify maintainer in configuration file or with argument.')
 
-        self.editor = self.args.editor or cfg_file.get('lazycopy', 'editor')
+        self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
         if not self.editor:
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
                 print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor.")
 
-        self.temp_dir = self.args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
+        self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
         if not self.temp_dir:
             print('Using /tmp as temporary directory.')
             self.temp_dir = '/tmp'
 
-        self.diff_args = self.args.diff_args or cfg_file.get('lazycopy', 'diff_args')
+        self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
         if not self.diff_args:
             print('Will prepare unified diff.')
             self.diff_args = '-u'
 
-        self.list_file = self.args.list_file or cfg_file.get('lazycopy', 'list_file')
+        self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
         if not self.list_file:
             print('Using /tmp/webwml_list.tmp as a list file.')
             self.list_file = '/tmp/webwml_list.tmp'
-        
+
     def check_target_file(self):
         # Check specified file to be a valid (wml, src) page
         self.path_lst = self.path.split('/')
