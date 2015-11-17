@@ -54,6 +54,7 @@ import configparser
 
 class Configuration():
     def __init__(self, args):
+        self.args = args
         self.path = args.path
         self.check_target_file()
         self.no_check = args.no_check
@@ -68,7 +69,7 @@ class Configuration():
         self.path_lst2 = self.path_lst[1:]
         self.target_path = self.target_lang + '/' + '/'.join(self.path_lst[1:-1])
         self.target_file = self.target_path + '/' + self.path_lst[-1]
-        self.path_file = '/tmp/' + "_".join(self.path_lst2) + '.' + self.path[:2] + '_' + self.lang_code + '.patch'
+        self.patch_file = '/tmp/' + "_".join(self.path_lst2) + '.' + self.path[:2] + '_' + self.lang_code + '.patch'
         self.lst_file_entry = '/'.join(self.path_lst2)
         self.source_makefile = '/'.join(self.path_lst[:-1]) + '/Makefile'
         self.target_makefile = self.target_lang + '/' + '/'.join(self.path_lst[1:-1]) + '/Makefile'
@@ -80,33 +81,33 @@ class Configuration():
         else:
             print('Configuration file lazycopy.conf not found.')
 
-        self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
+        self.target_lang = self.args.language or cfg_file.get('lazycopy', 'language')
         if not self.target_lang:
             print('ERROR: specify target language in configuration file or with argument.')
             sys.exit(1)
 
-        self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
+        self.maintainer = self.args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
             print('You can specify maintainer in configuration file or with argument.')
 
-        self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
+        self.editor = self.args.editor or cfg_file.get('lazycopy', 'editor')
         if not self.editor:
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
                 print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor.")
 
-        self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
+        self.temp_dir = self.args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
         if not self.temp_dir:
             print('Using /tmp as temporary directory.')
             self.temp_dir = '/tmp'
 
-        self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
+        self.diff_args = self.args.diff_args or cfg_file.get('lazycopy', 'diff_args')
         if not self.diff_args:
             print('Will prepare unified diff.')
             self.diff_args = '-u'
 
-        self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
+        self.list_file = self.args.list_file or cfg_file.get('lazycopy', 'list_file')
         if not self.list_file:
             print('Using /tmp/webwml_list.tmp as a list file.')
             self.list_file = '/tmp/webwml_list.tmp'
@@ -134,7 +135,7 @@ class Configuration():
         return 'include $(subst webwml/' + self.target_lang + ',webwml/english,$(CURDIR))/Makefile\n'
     
     def make_diff(self):
-        self.diff_string = 'diff ' + self.diff_args + ' ' + self.path + ' ' + self.target_file + ' > ' +  self.path_file
+        return 'diff ' + self.diff_args + ' ' + self.path + ' ' + self.target_file + ' > ' +  self.patch_file
 
         
 def check_status(target_file):
@@ -144,6 +145,7 @@ def check_status(target_file):
     out, err = cvs.communicate()
     if cvs.returncode:
         return
+    out = out.decode('utf-8')
     cvs_status = out.split('\n')
     for entry in cvs_status:
         if 'Status' in entry:
@@ -161,29 +163,29 @@ def check_status(target_file):
     sys.exit(1)
 
 def copy_original(config):
-    print(('Copying ' + config.get_patch()))
-    if not os.path.exists(config.get_patch()):
+    print('Copying ' + config.path)
+    if not os.path.exists(config.path):
         print('ERROR: specified file does not exist.')
         sys.exit(1)
-    if not config.get_not_check():
-        check_status()
-    if not os.path.exists(config.get_target_path()):
-        os.makedirs(config.get_target_path())
-    if not os.path.exists(config.get_target_makefile()):
-        makefile = open(config.get_target_path() + '/Makefile', 'w')
-        makefile.write(config.make_Makefile()))
+    if not config.no_check:
+        check_status(config.target_file)
+    if not os.path.exists(config.target_path):
+        os.makedirs(config.target_path)
+    if not os.path.exists(config.target_makefile):
+        makefile = open(config.target_path + '/Makefile', 'w')
+        makefile.write(config.target_makefile)
         makefile.close()
-    if not config.get_not_update():
+    if not config.no_update:
         print('Updating specified file.')
-        subprocess.call(['cvs', 'update', config.get_path()])
-    src_file = open(config.get_path(), 'r')
-    dest_file = open(config.get_target_file(), 'w')
+        subprocess.call(['cvs', 'update', config.path])
+    src_file = open(config.path, 'r')
+    dest_file = open(config.target_file, 'w')
     src_file_contents = src_file.read().split('\n')
     inserted_title = False
     for line in src_file_contents:
         line += '\n'
         if line[0] != '#' and not inserted_title:
-            dest_file.write(make_title() + '\n')
+            dest_file.write(config.make_title() + '\n')
             dest_file.write(line)
             inserted_title = True
         else:
@@ -238,7 +240,7 @@ def reverse(list_str):
 def make_pseudolink(config):
     if os.path.exists(config.list_file):
         print(('Adding new entry to list file.'))
-        tmp_list_file = open(list_file, 'r')
+        tmp_list_file = open(config.list_file, 'r')
         raw_data = tmp_list_file.read()[6:].split('{')
         raw_data[1] = raw_data[1][:-1]
         raw_data[1] = raw_data[1].split('}')
@@ -249,10 +251,12 @@ def make_pseudolink(config):
         expanded_data.append(list_file_entry)
         result = 'wml://' + simplify(expanded_data)[0] + '{' + ','.join(reverse(simplify(expanded_data))[0]) + '}' + reverse(simplify(expanded_data))[1] + '\n'
         tmp_list_file.close()
-        else:
-            print(('Creating a new list file.'))
-            tmp_list_file = open(list_file, 'w')
-            result = 'wml://{' + list_file_entry + '}\n'
+    else:
+        print(('Creating a new list file.'))
+        tmp_list_file = open(config.list_file, 'w')
+        result = 'wml://{' + config.lst_file_entry + '}\n'
+    tmp_list_file.write(result)
+    print(result)
 
 if __name__ == '__main__':
     # Command-line arguments PARSER
@@ -287,5 +291,12 @@ if __name__ == '__main__':
 
     config = Configuration(PARSER.parse_args())
 
-    
+    copy_original(config)
+
+    if not config.no_edit:
+          run_editor(config.editor, config.target_file)
+    if not config.no_diff:
+          run_diff(config.make_diff())
+
+    make_pseudolink(config)
 
