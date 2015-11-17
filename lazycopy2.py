@@ -1,37 +1,37 @@
 #!/usr/bin/python3
-########################################################################
+###############################################################################
 #
 # lazycopy -- lazy copy tool for Debian webwml repository
 #
 # Copyright (C) 2013-2014  Lev Lamberov <l.lamberov@gmail.com>
 #
-# This program is licensed under the GNU General Public License (GPL).
-# you can redistribute it and/or modify it under the terms of the GNU
-# General Public License as published by the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA; either
-# version 3 of the License, or (at your option) any later version.
+# This program is licensed under the GNU General Public License (GPL). you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA 02111-1307 USA; either version 3 of the License, or (at
+# your option) any later version.
 # The GPL is available online at http://www.gnu.org/copyleft/gpl.html
 # or in /usr/share/common-licenses/GPL-3
 #
-########################################################################
+###############################################################################
 #
 # Configuration
 #
-########################################################################
+###############################################################################
 #
 # Configuration file should have a section [lazycopy] and may contain the
-# following options: language, maintainer, editor, temp_dir, diff_args.
-# Some of these options can be empty (as editor and temp_dir options in
-# the following example).
+# following options: language, maintainer, editor, temp_dir, diff_args. Some of
+# these options can be empty (as editor and temp_dir options in the following
+# example).
 #
-# Command-line arguments override options in the configuration file. If
-# editor is not specified, lazycopy will use symlink /usr/bin/editor. You
-# can change it with update-alternatives command. If temp_dir is not
-# specified, then /tmp will be used to store patches. If diff_args is not
-# specified, then lazycopy will produce unified diff (with diff -u
-# command). If maintainer is not specified, then information about
-# maintainer will not be added to translation file. But you have to
-# specify target language either in configuration file, or by argument.
+# Command-line arguments override options in the configuration file. If editor
+# is not specified, lazycopy will use symlink /usr/bin/editor. You can change
+# it with update-alternatives command. If temp_dir is not specified, then /tmp
+# will be used to store patches. If diff_args is not specified, then lazycopy
+# will produce unified diff (with diff -u command). If maintainer is not
+# specified, then information about maintainer will not be added to translation
+# file. But you have to specify target language either in configuration file,
+# or by argument.
 #
 # Example of configuration file:
 #
@@ -42,7 +42,7 @@
 # temp_dir =
 # diff_args = -yw --minimal
 #
-########################################################################
+###############################################################################
 
 _VERSION_ = '0.3.0'
 
