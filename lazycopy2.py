@@ -65,40 +65,40 @@ class Configuration():
             cfg_file = configparser.RawConfigParser()
             cfg_file.read('lazycopy.conf')
         else:
-            print('Configuration file lazycopy.conf not found.')
+            print("Configuration file lazycopy.conf not found.")
 
         self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
         if not self.target_lang:
-            print('ERROR: specify target language in configuration file or' \
-                  'with argument.')
+            print("ERROR: specify target language in configuration file or" \
+                  "with argument.")
             sys.exit(1)
 
         self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
-            print('You can specify maintainer in configuration file or with' \
-                  'argument.')
+            print("You can specify maintainer in configuration file or with" \
+                  "argument.")
 
         self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
         if not self.editor:
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
-                print('Editor is not specified, symlink /usr/bin/editor' \
-                      'doesn't exits, not running editor.')
+                print("Editor is not specified, symlink /usr/bin/editor" \
+                      "doesn't exits, not running editor.")
 
         self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
         if not self.temp_dir:
-            print('Using /tmp as temporary directory.')
+            print("Using /tmp as temporary directory.")
             self.temp_dir = '/tmp'
 
         self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
         if not self.diff_args:
-            print('Will prepare unified diff.')
+            print("Will prepare unified diff.")
             self.diff_args = '-u'
 
         self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
         if not self.list_file:
-            print('Using /tmp/webwml_list.tmp as a list file.')
+            print("Using /tmp/webwml_list.tmp as a list file.")
             self.list_file = '/tmp/webwml_list.tmp'
 
         self.lang_code = self.target_lang[:2]
@@ -117,7 +117,7 @@ class Configuration():
         # Check specified file to be a valid (wml, src) page
         self.path_lst = self.path.split('/')
         if 'wml' not in self.path_lst[-1] and 'src' not in self.path_lst[-1]:
-            print('ERROR: specified file doesn't seem to be a valid page.')
+            print("ERROR: specified file doesn't seem to be a valid page.")
             sys.exit(1)
             
     def revision_number(self):
@@ -143,7 +143,7 @@ class Configuration():
 
         
 def check_status(target_file):
-    print(('Checking status of ' + target_file))
+    print(("Checking status of " + target_file))
     cvs = subprocess.Popen(['cvs', 'status', target_file],
                            stdout=subprocess.PIPE)
     out, err = cvs.communicate()
@@ -157,20 +157,20 @@ def check_status(target_file):
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print('ERROR: An old translation exists in the Attic, you' \
-                      'should restore it using:')
-                print(('cvs update -j DELETED -j PREVIOUS' + target_file))
-                print('[Edit and update the file]')
-                print(('cvs ci ' + target_file))
+                print("ERROR: An old translation exists in the Attic, you" \
+                      "should restore it using:")
+                print(("cvs update -j DELETED -j PREVIOUS" + target_file))
+                print("[Edit and update the file]")
+                print(("cvs ci " + target_file))
                 return
-    print('ERROR: A translation already exists in CVS for this file.')
-    print('Please update your CVS copy using 'cvs update'.')
+    print("ERROR: A translation already exists in CVS for this file.")
+    print("Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
 
 def copy_original(config):
-    print('Copying ' + config.path)
+    print("Copying " + config.path)
     if not os.path.exists(config.path):
-        print('ERROR: specified file does not exist.')
+        print("ERROR: specified file does not exist.")
         sys.exit(1)
     if not config.no_check:
         check_status(config.target_file)
@@ -181,7 +181,7 @@ def copy_original(config):
         makefile.write(config.target_makefile)
         makefile.close()
     if not config.no_update:
-        print('Updating specified file.')
+        print("Updating specified file.")
         subprocess.call(['cvs', 'update', config.path])
     src_file = open(config.path, 'r')
     dest_file = open(config.target_file, 'w')
@@ -198,11 +198,11 @@ def copy_original(config):
     dest_file.close()
     
 def run_editor(editor, target_file):
-    print(('Running editor to edit ' + target_file))
+    print(("Running editor to edit " + target_file))
     subprocess.call([editor, target_file])
 
 def run_diff(diff_string):
-    print(('Running ' + diff_string))
+    print(("Running " + diff_string))
     subprocess.call(diff_string, shell=True)
     
 def simplify(data):
@@ -244,70 +244,71 @@ def reverse(list_str):
 
 def make_pseudolink(config):
     if os.path.exists(config.list_file):
-        print('Adding new entry to list file.')
+        print("Adding new entry to list file.")
         tmp_list_file = open(config.list_file, 'r')
         raw_data = tmp_list_file.read()[6:].split('{')
+        tmp_list_file.close()
         raw_data[1] = raw_data[1][:-1]
         raw_data[1] = raw_data[1].split('}')
         raw_data.append(raw_data[1].pop(1))
         expanded_data = []
         for entry in raw_data[1][0].split(','):
             expanded_data.append(raw_data[0] + entry + raw_data[2])
-        expanded_data.append(list_file_entry)
+        expanded_data.append(config.lst_file_entry)
         result = 'wml://' + simplify(expanded_data)[0] + '{' + \
                  ','.join(reverse(simplify(expanded_data))[0]) + '}' + \
                  reverse(simplify(expanded_data))[1] + '\n'
-        tmp_list_file.close()
     else:
-        print('Creating a new list file.')
-        tmp_list_file = open(config.list_file, 'w')
+        print("Creating a new list file.")
         result = 'wml://{' + config.lst_file_entry + '}\n'
+    tmp_list_file = open(config.list_file, 'w')
     tmp_list_file.write(result)
+    tmp_list_file.close()
     print(result)
 
 if __name__ == '__main__':
     # Command-line arguments parser
-    parser = argparse.ArgumentParser(description='Copies the specified page' \
-                                     'to the corresponding directory of the' \
-                                     'specified language and adds the' \
-                                     'translation-check header with the' \
-                                     'current revision, optionally adds also' \
-                                     'the MAINTAINER name. If the directory' \
-                                     'does not exist, it will be created,' \
-                                     'and the Makefile created. If the' \
-                                     'translation of the file already exists' \
-                                     'in the target language directory either' \
-                                     'because it was removed (and is in the' \
-                                     'Attic) or has been removed locally the' \
-                                     'program will abort and warn the user' \
-                                     '(unless '-nu' is used)')
+    parser = argparse.ArgumentParser(description="Copies the specified page" \
+                                     "to the corresponding directory of the" \
+                                     "specified language and adds the" \
+                                     "translation-check header with the" \
+                                     "current revision, optionally adds also" \
+                                     "the MAINTAINER name. If the directory" \
+                                     "does not exist, it will be created," \
+                                     "and the Makefile created. If the" \
+                                     "translation of the file already exists" \
+                                     "in the target language directory either" \
+                                     "because it was removed (and is in the" \
+                                     "Attic) or has been removed locally the" \
+                                     "program will abort and warn the user" \
+                                     "(unless '-nu' is used)")
 
     parser.add_argument('path', metavar='path', type=str,
-                        help='Sets file for the translation')
+                        help="Sets file for the translation")
     parser.add_argument('-l', '--language', metavar='language', type=str,
-                        help='Sets language for the translation.')
+                        help="Sets language for the translation.")
     parser.add_argument('-m', '--maintainer', metavar='maintainer', type=str,
-                        help='Sets maintainer for the translation.')
+                        help="Sets maintainer for the translation.")
     parser.add_argument('-e', '--editor', metavar='editor', type=str,
-                        help='Sets editor')
+                        help="Sets editor")
     parser.add_argument('-t', '--temp_dir', metavar='temp_dir', type=str,
-                        help='Sets temporary directory')
+                        help="Sets temporary directory")
     parser.add_argument('-d', '--diff_args', metavar='diff_args', type=str,
-                        help='Sets diff arguments')
+                        help="Sets diff arguments")
     parser.add_argument('-f', '--list-file', metavar='list_file', type=str,
-                        help='Sets list file')
+                        help="Sets list file")
     parser.add_argument('-nc', '--no-check', action='store_const', const=True,
                         default=False,
-                        help='Does not check status of target files in CVS')
+                        help="Does not check status of target files in CVS")
     parser.add_argument('-nu', '--no-update', action='store_const', const=True,
                         default=False,
-                        help='Does not update specified')
+                        help="Does not update specified")
     parser.add_argument('-ne', '--no-edit', action='store_const', const=True,
                         default=False,
-                        help='Does not run editor and produce patch')
+                        help="Does not run editor and produce patch")
     parser.add_argument('-nd', '--no-diff', action='store_const', const=True,
                         default=False,
-                        help='Does not produce patch')
+                        help="Does not produce patch")
 
     config = Configuration(parser.parse_args())
 
