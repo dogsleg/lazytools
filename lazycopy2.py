@@ -69,13 +69,13 @@ class Configuration():
 
         self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
         if not self.target_lang:
-            print("ERROR: specify target language in configuration file or" \
+            print("ERROR: specify target language in configuration file or " \
                   "with argument.")
             sys.exit(1)
 
         self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
-            print("You can specify maintainer in configuration file or with" \
+            print("You can specify maintainer in configuration file or with " \
                   "argument.")
 
         self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
@@ -83,7 +83,7 @@ class Configuration():
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
-                print("Editor is not specified, symlink /usr/bin/editor" \
+                print("Editor is not specified, symlink /usr/bin/editor " \
                       "doesn't exits, not running editor.")
 
         self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
@@ -157,7 +157,7 @@ def check_status(target_file):
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print("ERROR: An old translation exists in the Attic, you" \
+                print("ERROR: An old translation exists in the Attic, you " \
                       "should restore it using:")
                 print(("cvs update -j DELETED -j PREVIOUS" + target_file))
                 print("[Edit and update the file]")
@@ -268,20 +268,20 @@ def make_pseudolink(config):
 
 if __name__ == '__main__':
     # Command-line arguments parser
-    parser = argparse.ArgumentParser(description="Copies the specified page" \
-                                     "to the corresponding directory of the" \
-                                     "specified language and adds the" \
-                                     "translation-check header with the" \
-                                     "current revision, optionally adds also" \
-                                     "the MAINTAINER name. If the directory" \
-                                     "does not exist, it will be created," \
-                                     "and the Makefile created. If the" \
-                                     "translation of the file already exists" \
-                                     "in the target language directory either" \
-                                     "because it was removed (and is in the" \
-                                     "Attic) or has been removed locally the" \
-                                     "program will abort and warn the user" \
-                                     "(unless '-nu' is used)")
+    parser = argparse.ArgumentParser(description="Copies the specified page " \
+                                     "to the corresponding directory of the " \
+                                     "specified language and adds the " \
+                                     "translation-check header with the " \
+                                     "current revision, optionally adds also " \
+                                     "the MAINTAINER name. If the directory " \
+                                     "does not exist, it will be created, " \
+                                     "and the Makefile created. If the " \
+                                     "translation of the file already exists " \
+                                     "in the target language directory " \
+                                     "either because it was removed (and is "
+                                     "in the Attic) or has been removed " \
+                                     "locally the program will abort and " \
+                                     "warn the user (unless '-nu' is used)")
 
     parser.add_argument('path', metavar='path', type=str,
                         help="Sets file for the translation")
