@@ -121,8 +121,9 @@ class Configuration():
             sys.exit(1)
             
     def revision_number(self):
-        cvs_entries_file = open('/'.join(self.path_lst[:-1]) + '/CVS/Entries', 'r')
-        for line in cvs_entries_file:
+        cvs_entries_file = '/'.join(self.path_lst[:-1]) + '/CVS/Entries'
+        cvs_entries = open(cvs_entries_file, 'r')
+        for line in cvs_entries:
             if self.path_lst[-1] in line:
                 return line.split('/')[2]
 
@@ -242,10 +243,10 @@ def reverse(list_str):
                 output_lst.append(item[::-1])
     return output_lst, output_str
 
-def make_pseudolink(config):
-    if os.path.exists(config.list_file):
+def make_pseudolink(list_file, lst_file_entry):
+    if os.path.exists(list_file):
         print("Adding new entry to list file.")
-        tmp_list_file = open(config.list_file, 'r')
+        tmp_list_file = open(list_file, 'r')
         raw_data = tmp_list_file.read()[6:].split('{')
         tmp_list_file.close()
         raw_data[1] = raw_data[1][:-1]
@@ -254,14 +255,14 @@ def make_pseudolink(config):
         expanded_data = []
         for entry in raw_data[1][0].split(','):
             expanded_data.append(raw_data[0] + entry + raw_data[2])
-        expanded_data.append(config.lst_file_entry)
+        expanded_data.append(lst_file_entry)
         result = 'wml://' + simplify(expanded_data)[0] + '{' + \
                  ','.join(reverse(simplify(expanded_data))[0]) + '}' + \
                  reverse(simplify(expanded_data))[1] + '\n'
     else:
         print("Creating a new list file.")
-        result = 'wml://{' + config.lst_file_entry + '}\n'
-    tmp_list_file = open(config.list_file, 'w')
+        result = 'wml://{' + lst_file_entry + '}\n'
+    tmp_list_file = open(list_file, 'w')
     tmp_list_file.write(result)
     tmp_list_file.close()
     print(result)
@@ -319,5 +320,5 @@ if __name__ == '__main__':
     if not config.no_diff:
           run_diff(config.make_diff())
 
-    make_pseudolink(config)
+    make_pseudolink(config.list_file, config.lst_file_entry)
 
