@@ -52,6 +52,14 @@ import os
 import subprocess
 import configparser
 
+
+class colors:
+    error = '\033[41m[ERROR]\033[0m '
+    warning = '\e[43m[WARINIG]\033[0m '
+    success = '\033[42m[OK]\033[0m '
+    info = '\033[44m[INFO]\033[0m '
+
+    
 class Configuration():
     def __init__(self, args):
         self.path = args.path
@@ -65,40 +73,40 @@ class Configuration():
             cfg_file = configparser.RawConfigParser()
             cfg_file.read('lazycopy.conf')
         else:
-            print("Configuration file lazycopy.conf not found.")
+            print(colors.info + "Configuration file lazycopy.conf not found.")
 
         self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
         if not self.target_lang:
-            print("ERROR: specify target language in configuration file or " \
-                  "with argument.")
+            print(colors.error + "Specify target language in configuration " \
+                  "file or with argument.")
             sys.exit(1)
 
         self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
         if not self.maintainer:
-            print("You can specify maintainer in configuration file or with " \
-                  "argument.")
+            print(colors.info + "You can specify maintainer in configuration " \
+                  "file or with argument.")
 
         self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
         if not self.editor:
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
-                print("Editor is not specified, symlink /usr/bin/editor " \
-                      "doesn't exits, not running editor.")
+                print(colors.warning + "Editor is not specified, symlink " \
+                      "/usr/bin/editor doesn't exits, not running editor.")
 
         self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
         if not self.temp_dir:
-            print("Using /tmp as temporary directory.")
+            print(colors.info + "Using /tmp as temporary directory.")
             self.temp_dir = '/tmp'
 
         self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
         if not self.diff_args:
-            print("Will prepare unified diff.")
+            print(colors.info + "Will prepare unified diff.")
             self.diff_args = '-u'
 
         self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
         if not self.list_file:
-            print("Using /tmp/webwml_list.tmp as a list file.")
+            print(colors.info + "Using /tmp/webwml_list.tmp as a list file.")
             self.list_file = '/tmp/webwml_list.tmp'
 
         self.lang_code = self.target_lang[:2]
@@ -117,7 +125,8 @@ class Configuration():
         # Check specified file to be a valid (wml, src) page
         self.path_lst = self.path.split('/')
         if 'wml' not in self.path_lst[-1] and 'src' not in self.path_lst[-1]:
-            print("ERROR: specified file doesn't seem to be a valid page.")
+            print(colors.error + "Specified file doesn't seem to be a valid " \
+                  "page.")
             sys.exit(1)
             
     def revision_number(self):
@@ -144,7 +153,7 @@ class Configuration():
 
         
 def check_status(target_file):
-    print(("Checking status of " + target_file))
+    print((colors.info + "Checking status of " + target_file))
     cvs = subprocess.Popen(['cvs', 'status', target_file],
                            stdout=subprocess.PIPE)
     out, err = cvs.communicate()
@@ -158,20 +167,20 @@ def check_status(target_file):
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print("ERROR: An old translation exists in the Attic, you " \
-                      "should restore it using:")
+                print(colors.error + "An old translation exists in the " \
+                      "Attic, you should restore it using:")
                 print(("cvs update -j DELETED -j PREVIOUS" + target_file))
                 print("[Edit and update the file]")
                 print(("cvs ci " + target_file))
                 return
-    print("ERROR: A translation already exists in CVS for this file.")
-    print("Please update your CVS copy using 'cvs update'.")
+    print(colors.error + "A translation already exists in CVS for this file.")
+    print(colors.error + "Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
 
 def copy_original(config):
-    print("Copying " + config.path)
+    print(colors.info + "Copying " + config.path)
     if not os.path.exists(config.path):
-        print("ERROR: specified file does not exist.")
+        print(colors.error + "Specified file does not exist.")
         sys.exit(1)
     if not config.no_check:
         check_status(config.target_file)
@@ -182,7 +191,7 @@ def copy_original(config):
         makefile.write(config.target_makefile)
         makefile.close()
     if not config.no_update:
-        print("Updating specified file.")
+        print(colors.info + "Updating specified file.")
         subprocess.call(['cvs', 'update', config.path])
     src_file = open(config.path, 'r')
     dest_file = open(config.target_file, 'w')
@@ -199,11 +208,11 @@ def copy_original(config):
     dest_file.close()
     
 def run_editor(editor, target_file):
-    print(("Running editor to edit " + target_file))
+    print((colors.info + "Running editor to edit " + target_file))
     subprocess.call([editor, target_file])
 
 def run_diff(diff_string):
-    print(("Running " + diff_string))
+    print((colors.info + "Running " + diff_string))
     subprocess.call(diff_string, shell=True)
     
 def simplify(data):
@@ -245,7 +254,7 @@ def reverse(list_str):
 
 def make_pseudolink(list_file, lst_file_entry):
     if os.path.exists(list_file):
-        print("Adding new entry to list file.")
+        print(colors.info + "Adding new entry to list file.")
         tmp_list_file = open(list_file, 'r')
         raw_data = tmp_list_file.read()[6:].split('{')
         tmp_list_file.close()
@@ -260,7 +269,7 @@ def make_pseudolink(list_file, lst_file_entry):
                  ','.join(reverse(simplify(expanded_data))[0]) + '}' + \
                  reverse(simplify(expanded_data))[1] + '\n'
     else:
-        print("Creating a new list file.")
+        print(colors.info + "Creating a new list file.")
         result = 'wml://{' + lst_file_entry + '}\n'
     tmp_list_file = open(list_file, 'w')
     tmp_list_file.write(result)
