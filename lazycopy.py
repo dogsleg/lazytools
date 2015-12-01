@@ -53,14 +53,14 @@ import subprocess
 import configparser
 
 
-class colors:
+class colors(object):
     error = '\033[41m[ERROR]\033[0m '
     warning = '\e[43m[WARINIG]\033[0m '
     success = '\033[42m[OK]\033[0m '
     info = '\033[44m[INFO]\033[0m '
 
 
-class Configuration():
+class Configuration(object):
     def __init__(self, args):
         self.path = args.path
         self.check_target_file()
@@ -325,8 +325,8 @@ if __name__ == '__main__':
     copy_original(config)
 
     if not config.no_edit:
-          run_editor(config.editor, config.target_file)
+        run_editor(config.editor, config.target_file)
     if not config.no_diff:
-          run_diff(config.make_diff())
+        run_diff(config.make_diff())
 
     make_pseudolink(config.list_file, config.lst_file_entry)
