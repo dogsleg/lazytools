@@ -44,7 +44,7 @@
 #
 ###############################################################################
 
-_VERSION_ = '0.3.0'
+_VERSION_ = '0.3.1'
 
 import argparse
 import sys
@@ -59,7 +59,7 @@ class colors:
     success = '\033[42m[OK]\033[0m '
     info = '\033[44m[INFO]\033[0m '
 
-    
+
 class Configuration():
     def __init__(self, args):
         self.path = args.path
@@ -68,7 +68,7 @@ class Configuration():
         self.no_update = args.no_update
         self.no_edit = args.no_edit
         self.no_diff = args.no_diff
-                
+
         if os.path.exists('lazycopy.conf'):
             cfg_file = configparser.RawConfigParser()
             cfg_file.read('lazycopy.conf')
@@ -128,7 +128,7 @@ class Configuration():
             print(colors.error + "Specified file doesn't seem to be a valid " \
                   "page.")
             sys.exit(1)
-            
+
     def revision_number(self):
         cvs_entries_file = '/'.join(self.path_lst[:-1]) + '/CVS/Entries'
         cvs_entries = open(cvs_entries_file, 'r')
@@ -146,12 +146,12 @@ class Configuration():
     def make_Makefile(self):
         return 'include $(subst webwml/' + self.target_lang + \
             ',webwml/english,$(CURDIR))/Makefile\n'
-    
+
     def make_diff(self):
         return 'diff ' + self.diff_args + ' ' + self.path + ' ' + \
             self.target_file + ' > ' +  self.patch_file
 
-        
+
 def check_status(target_file):
     print((colors.info + "Checking status of " + target_file))
     cvs = subprocess.Popen(['cvs', 'status', target_file],
@@ -206,7 +206,7 @@ def copy_original(config):
         else:
             dest_file.write(line)
     dest_file.close()
-    
+
 def run_editor(editor, target_file):
     print((colors.info + "Running editor to edit " + target_file))
     subprocess.call([editor, target_file])
@@ -214,7 +214,7 @@ def run_editor(editor, target_file):
 def run_diff(diff_string):
     print((colors.info + "Running " + diff_string))
     subprocess.call(diff_string, shell=True)
-    
+
 def simplify(data):
     matched = ''
     nonmatched = []
@@ -330,4 +330,3 @@ if __name__ == '__main__':
           run_diff(config.make_diff())
 
     make_pseudolink(config.list_file, config.lst_file_entry)
-
