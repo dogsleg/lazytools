@@ -156,7 +156,8 @@ def check_status(target_file):
     print(colors.info + "Checking status of " + target_file)
     cvs = subprocess.Popen(['cvs', 'status', target_file],
                            stdout=subprocess.PIPE)
-    out, err = cvs.communicate()
+    #out, err = cvs.communicate()
+    out = cvs.communicate()
     if cvs.returncode:
         return
     out = out.decode('utf-8')
