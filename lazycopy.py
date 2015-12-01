@@ -1,37 +1,37 @@
-#!/usr/bin/python
-########################################################################
+#!/usr/bin/python3
+###############################################################################
 #
 # lazycopy -- lazy copy tool for Debian webwml repository
 #
 # Copyright (C) 2013-2014  Lev Lamberov <l.lamberov@gmail.com>
 #
-# This program is licensed under the GNU General Public License (GPL).
-# you can redistribute it and/or modify it under the terms of the GNU
-# General Public License as published by the Free Software Foundation,
-# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA; either
-# version 3 of the License, or (at your option) any later version.
+# This program is licensed under the GNU General Public License (GPL). you can
+# redistribute it and/or modify it under the terms of the GNU General Public
+# License as published by the Free Software Foundation, Inc., 59 Temple Place,
+# Suite 330, Boston, MA 02111-1307 USA; either version 3 of the License, or (at
+# your option) any later version.
 # The GPL is available online at http://www.gnu.org/copyleft/gpl.html
 # or in /usr/share/common-licenses/GPL-3
 #
-########################################################################
+###############################################################################
 #
 # Configuration
 #
-########################################################################
+###############################################################################
 #
 # Configuration file should have a section [lazycopy] and may contain the
-# following options: language, maintainer, editor, temp_dir, diff_args.
-# Some of these options can be empty (as editor and temp_dir options in
-# the following example).
+# following options: language, maintainer, editor, temp_dir, diff_args. Some of
+# these options can be empty (as editor and temp_dir options in the following
+# example).
 #
-# Command-line arguments override options in the configuration file. If
-# editor is not specified, lazycopy will use symlink /usr/bin/editor. You
-# can change it with update-alternatives command. If temp_dir is not
-# specified, then /tmp will be used to store patches. If diff_args is not
-# specified, then lazycopy will produce unified diff (with diff -u
-# command). If maintainer is not specified, then information about
-# maintainer will not be added to translation file. But you have to
-# specify target language either in configuration file, or by argument.
+# Command-line arguments override options in the configuration file. If editor
+# is not specified, lazycopy will use symlink /usr/bin/editor. You can change
+# it with update-alternatives command. If temp_dir is not specified, then /tmp
+# will be used to store patches. If diff_args is not specified, then lazycopy
+# will produce unified diff (with diff -u command). If maintainer is not
+# specified, then information about maintainer will not be added to translation
+# file. But you have to specify target language either in configuration file,
+# or by argument.
 #
 # Example of configuration file:
 #
@@ -42,131 +42,124 @@
 # temp_dir =
 # diff_args = -yw --minimal
 #
-########################################################################
+###############################################################################
 
-_VERSION_ = '0.2.2'
+_VERSION_ = '0.3.0'
 
 import argparse
 import sys
 import os
 import subprocess
+import configparser
 
-if sys.version_info < (3, 0):
-    import ConfigParser as configparser
-else:
-    import configparser
 
-# Command-line arguments PARSER
+class colors:
+    error = '\033[41m[ERROR]\033[0m '
+    warning = '\e[43m[WARINIG]\033[0m '
+    success = '\033[42m[OK]\033[0m '
+    info = '\033[44m[INFO]\033[0m '
 
-PARSER = argparse.ArgumentParser(description="Copies the specified page to the corresponding directory of the specified language and adds the translation-check header with the current revision, optionally adds also the MAINTAINER name. If the directory does not exist, it will be created, and the Makefile created. If the translation of the file already exists in the target language directory either because it was removed (and is in the Attic) or has been removed locally the program will abort and warn the user (unless '-nu' is used)")
+    
+class Configuration():
+    def __init__(self, args):
+        self.path = args.path
+        self.check_target_file()
+        self.no_check = args.no_check
+        self.no_update = args.no_update
+        self.no_edit = args.no_edit
+        self.no_diff = args.no_diff
+                
+        if os.path.exists('lazycopy.conf'):
+            cfg_file = configparser.RawConfigParser()
+            cfg_file.read('lazycopy.conf')
+        else:
+            print(colors.info + "Configuration file lazycopy.conf not found.")
 
-PARSER.add_argument('path', metavar='path', type=str,
-                    help='Sets file for the translation')
-PARSER.add_argument('-l', '--language', metavar='language', type=str,
-                    help='''Sets language for the translation.''')
-PARSER.add_argument('-m', '--maintainer', metavar='maintainer', type=str,
-                    help='Sets maintainer for the translation.')
-PARSER.add_argument('-e', '--editor', metavar='editor', type=str,
-                    help='Sets editor')
-PARSER.add_argument('-t', '--temp_dir', metavar='temp_dir', type=str,
-                    help='Sets temporary directory')
-PARSER.add_argument('-d', '--diff_args', metavar='diff_args', type=str,
-                    help='Sets diff arguments')
-PARSER.add_argument('-f', '--list-file', metavar='list_file', type=str,
-                    help='Sets list file')
-PARSER.add_argument('-nc', '--not-check', action='store_const', const=True,
-                    default=False,
-                    help='Does not check status of target files in CVS')
-PARSER.add_argument('-nu', '--not-update', action='store_const', const=True,
-                    default=False,
-                    help='Does not update specified')
-PARSER.add_argument('-ne', '--not-edit', action='store_const', const=True,
-                    default=False,
-                    help='Does not run editor and produce patch')
-PARSER.add_argument('-nd', '--not-diff', action='store_const', const=True,
-                    default=False,
-                    help='Does not produce patch')
+        self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
+        if not self.target_lang:
+            print(colors.error + "Specify target language in configuration " \
+                  "file or with argument.")
+            sys.exit(1)
 
-ARGS = PARSER.parse_args()
+        self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
+        if not self.maintainer:
+            print(colors.info + "You can specify maintainer in configuration " \
+                  "file or with argument.")
 
-# Check specified file to be a valid (wml, src) page
+        self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
+        if not self.editor:
+            if os.path.exists('/usr/bin/editor'):
+                self.editor = '/usr/bin/editor'
+            else:
+                print(colors.warning + "Editor is not specified, symlink " \
+                      "/usr/bin/editor doesn't exits, not running editor.")
 
-PATH_LIST = ARGS.path.split('/')
-if 'wml' not in PATH_LIST[-1] and 'src' not in PATH_LIST[-1]:
-    print("ERROR: specified file doesn't seem to be a valid page.")
-    sys.exit(1)
+        self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
+        if not self.temp_dir:
+            print(colors.info + "Using /tmp as temporary directory.")
+            self.temp_dir = '/tmp'
 
-# Configuration
+        self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
+        if not self.diff_args:
+            print(colors.info + "Will prepare unified diff.")
+            self.diff_args = '-u'
 
-if os.path.exists('lazycopy.conf'):
-    CONFIG = configparser.RawConfigParser()
-    CONFIG.read('lazycopy.conf')
-else:
-    print('Configuration file lazycopy.conf not found. You can specify lazycopy your default option in it, instead of using arguments all the time.')
+        self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
+        if not self.list_file:
+            print(colors.info + "Using /tmp/webwml_list.tmp as a list file.")
+            self.list_file = '/tmp/webwml_list.tmp'
 
-TARGET_LANGUAGE = ARGS.language or CONFIG.get('lazycopy', 'language')
+        self.lang_code = self.target_lang[:2]
+        self.path_lst = self.path.split('/')
+        self.path_lst2 = self.path_lst[1:]
+        self.target_path = self.target_lang + '/' + '/'.join(self.path_lst[1:-1])
+        self.target_file = self.target_path + '/' + self.path_lst[-1]
+        self.patch_file = '/tmp/' + '_'.join(self.path_lst2) + '.' + \
+                          self.path[:2] + '_' + self.lang_code + '.patch'
+        self.lst_file_entry = '/'.join(self.path_lst2)
+        self.source_makefile = '/'.join(self.path_lst[:-1]) + '/Makefile'
+        self.target_makefile = self.target_lang + '/' + \
+                               '/'.join(self.path_lst[1:-1]) + '/Makefile'
 
-if not TARGET_LANGUAGE:
-    print('ERROR: specify target language in configuration file or by argument.')
-    sys.exit(1)
+    def check_target_file(self):
+        # Check specified file to be a valid (wml, src) page
+        self.path_lst = self.path.split('/')
+        if 'wml' not in self.path_lst[-1] and 'src' not in self.path_lst[-1]:
+            print(colors.error + "Specified file doesn't seem to be a valid " \
+                  "page.")
+            sys.exit(1)
+            
+    def revision_number(self):
+        cvs_entries_file = '/'.join(self.path_lst[:-1]) + '/CVS/Entries'
+        cvs_entries = open(cvs_entries_file, 'r')
+        for line in cvs_entries:
+            if self.path_lst[-1] in line:
+                return line.split('/')[2]
 
-MAINTAINER = ARGS.maintainer or CONFIG.get('lazycopy', 'maintainer')
+    def make_title(self):
+        title = '#use wml::debian::translation-check translation="' + \
+                self.revision_number() + '"'
+        if self.maintainer:
+            title += ' maintainer="' + self.maintainer + '"'
+        return title
 
-if not MAINTAINER:
-    print('You can specify maintainer in configuration file or by argument.')
+    def make_Makefile(self):
+        return 'include $(subst webwml/' + self.target_lang + \
+            ',webwml/english,$(CURDIR))/Makefile\n'
+    
+    def make_diff(self):
+        return 'diff ' + self.diff_args + ' ' + self.path + ' ' + \
+            self.target_file + ' > ' +  self.patch_file
 
-EDITOR = ARGS.editor or CONFIG.get('lazycopy', 'editor')
-
-if not EDITOR:
-    if os.path.exists('/usr/bin/editor'):
-        EDITOR = '/usr/bin/editor'
-    else:
-        print("Editor is not specified, symlink /usr/bin/editor doesn't exits, not running editor. Use update-alternatives or specify editor in configuration file of by argument.")
-
-TEMP_DIR = ARGS.temp_dir or CONFIG.get('lazycopy', 'temp_dir')
-
-if not TEMP_DIR:
-    print('Using /tmp as temporary directory. You can specify temporary directory in configuration file or by argument.')
-    TEMP_DIR = '/tmp'
-
-DIFF_ARGS = ARGS.diff_args or CONFIG.get('lazycopy', 'diff_args')
-
-if not DIFF_ARGS:
-    print('Will prepare unified diff. You can specify diff arguments in configuration file or by argument.')
-    DIFF_ARGS = '-u'
-
-LIST_FILE = ARGS.list_file or CONFIG.get('lazycopy', 'list_file')
-
-if not LIST_FILE:
-    print('Using /tmp/webwml_list.tmp as a list file. You can specify list file in configuration file or by argument.')
-    LIST_FILE = '/tmp/webwml_list.tmp'
-
-TARGET_PATH = TARGET_LANGUAGE + '/' + '/'.join(PATH_LIST[1:-1])
-TARGET_FILE = TARGET_PATH + '/' + PATH_LIST[-1]
-PATH_FILE = '/tmp/' + "_".join(PATH_LIST[1:]) + '.' + ARGS.path[:2] + '_' + TARGET_LANGUAGE[:2] + '.patch'
-LIST_FILE_ENTRY = '/'.join(PATH_LIST[1:])
-SOURCE_MAKEFILE = '/'.join(PATH_LIST[:-1]) + '/Makefile'
-TARGET_MAKEFILE = TARGET_LANGUAGE + '/' + '/'.join(PATH_LIST[1:-1]) + '/Makefile'
-
-def get_revision_number():
-    cvs_entries_file = open('/'.join(PATH_LIST[:-1]) + '/CVS/Entries', 'r')
-    for line in cvs_entries_file:
-        if PATH_LIST[-1] in line:
-            return line.split('/')[2]
-
-def make_title():
-    title = '#use wml::debian::translation-check translation="' + get_revision_number() + '"'
-    if MAINTAINER:
-        title += ' maintainer="' + MAINTAINER + '"'
-    return title
-
-def check_status():
-    print(('Checking status of ' + TARGET_FILE))
-    cvs = subprocess.Popen(['cvs', 'status', TARGET_FILE],
+        
+def check_status(target_file):
+    print((colors.info + "Checking status of " + target_file))
+    cvs = subprocess.Popen(['cvs', 'status', target_file],
                            stdout=subprocess.PIPE)
     out, err = cvs.communicate()
     if cvs.returncode:
         return
+    out = out.decode('utf-8')
     cvs_status = out.split('\n')
     for entry in cvs_status:
         if 'Status' in entry:
@@ -174,53 +167,54 @@ def check_status():
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print('ERROR: An old translation exists in the Attic, you should restore it using:')
-                print(('cvs update -j DELETED -j PREVIOUS' + TARGET_FILE))
-                print('[Edit and update the file]')
-                print(('cvs ci ' + TARGET_FILE))
+                print(colors.error + "An old translation exists in the " \
+                      "Attic, you should restore it using:")
+                print(("cvs update -j DELETED -j PREVIOUS" + target_file))
+                print("[Edit and update the file]")
+                print(("cvs ci " + target_file))
                 return
-    print("ERROR: A translation already exists in CVS for this file.")
-    print("Please update your CVS copy using 'cvs update'.")
+    print(colors.error + "A translation already exists in CVS for this file.")
+    print(colors.error + "Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
 
-print(('Copying ' + ARGS.path))
-if not os.path.exists(ARGS.path):
-    print('ERROR: specified file does not exist.')
-    sys.exit(1)
-if not ARGS.not_check:
-    check_status()
-if not os.path.exists(TARGET_PATH):
-    os.makedirs(TARGET_PATH)
-if not os.path.exists(TARGET_MAKEFILE):
-    MAKEFILE = open(TARGET_PATH + '/Makefile', 'w')
-    MAKEFILE.write('include $(subst webwml/' + TARGET_LANGUAGE + ',webwml/english,$(CURDIR))/Makefile\n')
-    MAKEFILE.close()
-if not ARGS.not_update:
-    print('Updating specified file.')
-    subprocess.call(['cvs', 'update', ARGS.path])
-SRC_FILE = open(ARGS.path, 'r')
-DEST_FILE = open(TARGET_FILE, 'w')
-SRC_FILE_CONTENTS = SRC_FILE.read().split('\n')
-INSERTED_TITLE = False
-for line in SRC_FILE_CONTENTS:
-    line += '\n'
-    if line[0] != '#' and not INSERTED_TITLE:
-        DEST_FILE.write(make_title() + '\n')
-        DEST_FILE.write(line)
-        INSERTED_TITLE = True
-    else:
-        DEST_FILE.write(line)
-DEST_FILE.close()
+def copy_original(config):
+    print(colors.info + "Copying " + config.path)
+    if not os.path.exists(config.path):
+        print(colors.error + "Specified file does not exist.")
+        sys.exit(1)
+    if not config.no_check:
+        check_status(config.target_file)
+    if not os.path.exists(config.target_path):
+        os.makedirs(config.target_path)
+    if not os.path.exists(config.target_makefile):
+        makefile = open(config.target_path + '/Makefile', 'w')
+        makefile.write(config.target_makefile)
+        makefile.close()
+    if not config.no_update:
+        print(colors.info + "Updating specified file.")
+        subprocess.call(['cvs', 'update', config.path])
+    src_file = open(config.path, 'r')
+    dest_file = open(config.target_file, 'w')
+    src_file_contents = src_file.read().split('\n')
+    inserted_title = False
+    for line in src_file_contents:
+        line += '\n'
+        if line[0] != '#' and not inserted_title:
+            dest_file.write(config.make_title() + '\n')
+            dest_file.write(line)
+            inserted_title = True
+        else:
+            dest_file.write(line)
+    dest_file.close()
+    
+def run_editor(editor, target_file):
+    print((colors.info + "Running editor to edit " + target_file))
+    subprocess.call([editor, target_file])
 
-if not ARGS.not_edit:
-    print(('Running editor to edit ' + TARGET_FILE))
-    subprocess.call([EDITOR, TARGET_FILE])
-
-if not ARGS.not_diff:
-    DIFF_STRING = 'diff ' + DIFF_ARGS + ' ' + ARGS.path + ' ' + TARGET_FILE + ' > ' +  PATH_FILE
-    print(('Running ' + DIFF_STRING))
-    subprocess.call(DIFF_STRING, shell=True)
-
+def run_diff(diff_string):
+    print((colors.info + "Running " + diff_string))
+    subprocess.call(diff_string, shell=True)
+    
 def simplify(data):
     matched = ''
     nonmatched = []
@@ -258,32 +252,82 @@ def reverse(list_str):
                 output_lst.append(item[::-1])
     return output_lst, output_str
 
-if os.path.exists(LIST_FILE):
-    print(('Adding new entry to list file.'))
-    TMP_LIST_FILE = open(LIST_FILE, 'r')
-    RAW_DATA = TMP_LIST_FILE.read()[6:].split('{')
+def make_pseudolink(list_file, lst_file_entry):
+    if os.path.exists(list_file):
+        print(colors.info + "Adding new entry to list file.")
+        tmp_list_file = open(list_file, 'r')
+        raw_data = tmp_list_file.read()[6:].split('{')
+        tmp_list_file.close()
+        raw_data[1] = raw_data[1][:-1]
+        raw_data[1] = raw_data[1].split('}')
+        raw_data.append(raw_data[1].pop(1))
+        expanded_data = []
+        for entry in raw_data[1][0].split(','):
+            expanded_data.append(raw_data[0] + entry + raw_data[2])
+        expanded_data.append(lst_file_entry)
+        result = 'wml://' + simplify(expanded_data)[0] + '{' + \
+                 ','.join(reverse(simplify(expanded_data))[0]) + '}' + \
+                 reverse(simplify(expanded_data))[1] + '\n'
+    else:
+        print(colors.info + "Creating a new list file.")
+        result = 'wml://{' + lst_file_entry + '}\n'
+    tmp_list_file = open(list_file, 'w')
+    tmp_list_file.write(result)
+    tmp_list_file.close()
+    print(result)
 
-    RAW_DATA[1] = RAW_DATA[1][:-1]
-    RAW_DATA[1] = RAW_DATA[1].split('}')
-    RAW_DATA.append(RAW_DATA[1].pop(1))
+if __name__ == '__main__':
+    # Command-line arguments parser
+    parser = argparse.ArgumentParser(description="Copies the specified page " \
+                                     "to the corresponding directory of the " \
+                                     "specified language and adds the " \
+                                     "translation-check header with the " \
+                                     "current revision, optionally adds also " \
+                                     "the MAINTAINER name. If the directory " \
+                                     "does not exist, it will be created, " \
+                                     "and the Makefile created. If the " \
+                                     "translation of the file already exists " \
+                                     "in the target language directory " \
+                                     "either because it was removed (and is "
+                                     "in the Attic) or has been removed " \
+                                     "locally the program will abort and " \
+                                     "warn the user (unless '-nu' is used)")
 
-    EXPANDED_DATA = []
+    parser.add_argument('path', metavar='path', type=str,
+                        help="Sets file for the translation")
+    parser.add_argument('-l', '--language', metavar='language', type=str,
+                        help="Sets language for the translation.")
+    parser.add_argument('-m', '--maintainer', metavar='maintainer', type=str,
+                        help="Sets maintainer for the translation.")
+    parser.add_argument('-e', '--editor', metavar='editor', type=str,
+                        help="Sets editor")
+    parser.add_argument('-t', '--temp_dir', metavar='temp_dir', type=str,
+                        help="Sets temporary directory")
+    parser.add_argument('-d', '--diff_args', metavar='diff_args', type=str,
+                        help="Sets diff arguments")
+    parser.add_argument('-f', '--list-file', metavar='list_file', type=str,
+                        help="Sets list file")
+    parser.add_argument('-nc', '--no-check', action='store_const', const=True,
+                        default=False,
+                        help="Does not check status of target files in CVS")
+    parser.add_argument('-nu', '--no-update', action='store_const', const=True,
+                        default=False,
+                        help="Does not update specified")
+    parser.add_argument('-ne', '--no-edit', action='store_const', const=True,
+                        default=False,
+                        help="Does not run editor and produce patch")
+    parser.add_argument('-nd', '--no-diff', action='store_const', const=True,
+                        default=False,
+                        help="Does not produce patch")
 
-    for entry in RAW_DATA[1][0].split(','):
-        EXPANDED_DATA.append(RAW_DATA[0] + entry + RAW_DATA[2])
+    config = Configuration(parser.parse_args())
 
-    EXPANDED_DATA.append(LIST_FILE_ENTRY)
+    copy_original(config)
 
-    RESULT = 'wml://' + simplify(EXPANDED_DATA)[0] + '{' + ','.join(reverse(simplify(EXPANDED_DATA))[0]) + '}' + reverse(simplify(EXPANDED_DATA))[1] + '\n'
+    if not config.no_edit:
+          run_editor(config.editor, config.target_file)
+    if not config.no_diff:
+          run_diff(config.make_diff())
 
-    TMP_LIST_FILE.close()
-else:
-    print(('Creating a new list file.'))
-    TMP_LIST_FILE = open(LIST_FILE, 'w')
-    RESULT = 'wml://{' + LIST_FILE_ENTRY + '}\n'
+    make_pseudolink(config.list_file, config.lst_file_entry)
 
-print(('Resulting list file string is as follows.'))
-print(RESULT)
-TMP_LIST_FILE = open(LIST_FILE, 'w')
-TMP_LIST_FILE.write(RESULT)
-TMP_LIST_FILE.close()
