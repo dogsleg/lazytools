@@ -153,7 +153,7 @@ class Configuration(object):
 
 
 def check_status(target_file):
-    print((colors.info + "Checking status of " + target_file))
+    print(colors.info + "Checking status of " + target_file)
     cvs = subprocess.Popen(['cvs', 'status', target_file],
                            stdout=subprocess.PIPE)
     out, err = cvs.communicate()
@@ -169,9 +169,10 @@ def check_status(target_file):
             if 'Attic' in entry.split()[-1]:
                 print(colors.error + "An old translation exists in the " \
                       "Attic, you should restore it using:")
-                print(("cvs update -j DELETED -j PREVIOUS" + target_file))
-                print("[Edit and update the file]")
-                print(("cvs ci " + target_file))
+                print(colors.info +"cvs update -j DELETED -j PREVIOUS" + \
+                      target_file)
+                print(colors.info + "Edit and update the file")
+                print(colors.info + "cvs ci " + target_file)
                 return
     print(colors.error + "A translation already exists in CVS for this file.")
     print(colors.error + "Please update your CVS copy using 'cvs update'.")
@@ -208,11 +209,11 @@ def copy_original(config):
     dest_file.close()
 
 def run_editor(editor, target_file):
-    print((colors.info + "Running editor to edit " + target_file))
+    print(colors.info + "Running editor to edit " + target_file)
     subprocess.call([editor, target_file])
 
 def run_diff(diff_string):
-    print((colors.info + "Running " + diff_string))
+    print(colors.info + "Running " + diff_string)
     subprocess.call(diff_string, shell=True)
 
 def simplify(data):
@@ -274,7 +275,7 @@ def make_pseudolink(list_file, lst_file_entry):
     tmp_list_file = open(list_file, 'w')
     tmp_list_file.write(result)
     tmp_list_file.close()
-    print(result)
+    print(colors.success + result)
 
 if __name__ == '__main__':
     # Command-line arguments parser
