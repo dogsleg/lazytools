@@ -19,7 +19,6 @@
 _VERSION_ = '0.0.4'
 
 import argparse
-import sys
 from urllib.request import urlopen
 from html.parser import HTMLParser
 
@@ -30,7 +29,7 @@ class MyHTMLParser(HTMLParser):
         self.content = []
         self.pick_data = False
         self.to_get = False
-        
+
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
             if ('name', 'untranslated') in attrs and not ARGS.no_general:
@@ -63,18 +62,18 @@ class MyHTMLParser(HTMLParser):
     def get_contents(self):
         return self.content
 
-    
-def quicksort(list):
+
+def quicksort(lst):
     """Quicksort using list comprehensions"""
-    if list == []: 
+    if lst == []:
         return []
     else:
-        pivot = list[0]
-        lesser = quicksort([x for x in list[1:] if x[1] < pivot[1]])
-        greater = quicksort([x for x in list[1:] if x[1] >= pivot[1]])
+        pivot = lst[0]
+        lesser = quicksort([x for x in lst[1:] if x[1] < pivot[1]])
+        greater = quicksort([x for x in lst[1:] if x[1] >= pivot[1]])
         return lesser + [pivot] + greater
 
-    
+
 if __name__ == '__main__':
     PARSER = argparse.ArgumentParser(description="Show sorted list of\
                                      untranslated pages for specified language")
@@ -95,7 +94,7 @@ if __name__ == '__main__':
     PARSER.add_argument('-r', '--reverse', action='store_const', const=True,
                         default=False,
                         help='Return reverse list of untranslated pages')
-    
+
     ARGS = PARSER.parse_args()
 
     BASE_HTML = 'https://www.debian.org/devel/website/stats/'
@@ -103,8 +102,8 @@ if __name__ == '__main__':
 
     HTML_PARSER = MyHTMLParser()
     HTML_PARSER.feed(HTML)
-    
-    if ARGS.reverse:                    
+
+    if ARGS.reverse:
         for entity in reversed(quicksort(HTML_PARSER.get_contents())):
             print(entity)
     else:
