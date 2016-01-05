@@ -190,7 +190,7 @@ def copy_original(config):
         os.makedirs(config.target_path)
     if not os.path.exists(config.target_makefile):
         makefile = open(config.target_path + '/Makefile', 'w')
-        makefile.write(config.target_makefile)
+        makefile.write(config.make_Makefile())
         makefile.close()
     if not config.no_update:
         print(colors.info + "Updating specified file.")
