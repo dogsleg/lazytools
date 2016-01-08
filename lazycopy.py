@@ -3,7 +3,7 @@
 #
 # lazycopy -- lazy copy tool for Debian webwml repository
 #
-# Copyright (C) 2013-2016  Lev Lamberov <l.lamberov@gmail.com>
+# Copyright (C) 2013-2016  Lev Lamberov <dogsleg@debian.org>
 #
 # This program is licensed under the GNU General Public License (GPL). you can
 # redistribute it and/or modify it under the terms of the GNU General Public
