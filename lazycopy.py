@@ -55,7 +55,7 @@ import configparser
 
 class colors(object):
     error = '\033[41m[ERROR]\033[0m '
-    warning = '\e[43m[WARINIG]\033[0m '
+    warning = '\e[43m[WARNING]\033[0m '
     success = '\033[42m[DONE]\033[0m '
     info = '\033[44m[INFO]\033[0m '
 
