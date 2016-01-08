@@ -4,7 +4,7 @@
 #
 # todo -- process todo for Debian website translators
 #
-# Copyright (C) 2015  Lev Lamberov <l.lamberov@gmail.com>
+# Copyright (C) 2015-2016  Lev Lamberov <l.lamberov@gmail.com>
 #
 # This program is licensed under the GNU General Public License (GPL).
 # you can redistribute it and/or modify it under the terms of the GNU
