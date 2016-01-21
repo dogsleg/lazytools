@@ -1,0 +1,8 @@
+doc-warnings: yes
+test-warnings: no
+strictness: veryhigh
+autodetect: yes
+pep8:
+    full: true
+python targets:
+    - 3
