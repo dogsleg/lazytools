@@ -4,4 +4,4 @@ strictness: veryhigh
 autodetect: yes
 pep8:
     full: true
-python targets: 3
+python-targets: 3
