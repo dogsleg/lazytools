@@ -1,7 +1,5 @@
 # webwml-utils
 
-[![Code Health](https://landscape.io/github/dogsleg/webwml-utils/master/landscape.svg?style=flat)](https://landscape.io/github/dogsleg/webwml-utils/master)
-
 Simple (lazy) utilities to work with Debian webwml repository (translation work).
 
 Includes:
