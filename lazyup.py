@@ -65,7 +65,7 @@ if __name__ == '__main__':
             result = subprocess.run(tds[1].string.split(), stdout=subprocess.PIPE)
             out_chars = len(result.stdout.decode('utf-8'))
             out_len = len(result.stdout.decode('utf-8').split('\n')) - 1
-            ENTRIES.append([tds[0].string, out_len, out_chars])
+            ENTRIES.append([tds[0].string, out_len, out_chars, tds[1].string])
 
     if ARGS.reverse:
         for e in reversed(quicksort(ENTRIES)):
