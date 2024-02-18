@@ -47,10 +47,10 @@
 _VERSION_ = '0.3.1'
 
 import argparse
-import sys
+import configparser
 import os
 import subprocess
-import configparser
+import sys
 
 
 class colors(object):
@@ -75,15 +75,17 @@ class Configuration(object):
         else:
             print(colors.info + "Configuration file lazycopy.conf not found.")
 
-        self.target_lang = args.language or cfg_file.get('lazycopy', 'language')
+        self.target_lang = args.language or cfg_file.get(
+            'lazycopy', 'language')
         if not self.target_lang:
-            print(colors.error + "Specify target language in configuration " \
+            print(colors.error + "Specify target language in configuration "
                   "file or with argument.")
             sys.exit(1)
 
-        self.maintainer = args.maintainer or cfg_file.get('lazycopy', 'maintainer')
+        self.maintainer = args.maintainer or cfg_file.get(
+            'lazycopy', 'maintainer')
         if not self.maintainer:
-            print(colors.info + "You can specify maintainer in configuration " \
+            print(colors.info + "You can specify maintainer in configuration "
                   "file or with argument.")
 
         self.editor = args.editor or cfg_file.get('lazycopy', 'editor')
@@ -91,7 +93,7 @@ class Configuration(object):
             if os.path.exists('/usr/bin/editor'):
                 self.editor = '/usr/bin/editor'
             else:
-                print(colors.warning + "Editor is not specified, symlink " \
+                print(colors.warning + "Editor is not specified, symlink "
                       "/usr/bin/editor doesn't exits, not running editor.")
 
         self.temp_dir = args.temp_dir or cfg_file.get('lazycopy', 'temp_dir')
@@ -99,12 +101,14 @@ class Configuration(object):
             print(colors.info + "Using /tmp as temporary directory.")
             self.temp_dir = '/tmp'
 
-        self.diff_args = args.diff_args or cfg_file.get('lazycopy', 'diff_args')
+        self.diff_args = args.diff_args or cfg_file.get(
+            'lazycopy', 'diff_args')
         if not self.diff_args:
             print(colors.info + "Will prepare unified diff.")
             self.diff_args = '-u'
 
-        self.list_file = args.list_file or cfg_file.get('lazycopy', 'list_file')
+        self.list_file = args.list_file or cfg_file.get(
+            'lazycopy', 'list_file')
         if not self.list_file:
             print(colors.info + "Using /tmp/webwml_list.tmp as a list file.")
             self.list_file = '/tmp/webwml_list.tmp'
@@ -112,20 +116,21 @@ class Configuration(object):
         self.lang_code = self.target_lang[:2]
         self.path_lst = self.path.split('/')
         self.path_lst2 = self.path_lst[1:]
-        self.target_path = self.target_lang + '/' + '/'.join(self.path_lst[1:-1])
+        self.target_path = self.target_lang + \
+            '/' + '/'.join(self.path_lst[1:-1])
         self.target_file = self.target_path + '/' + self.path_lst[-1]
         self.patch_file = '/tmp/' + '_'.join(self.path_lst2) + '.' + \
                           self.path[:2] + '_' + self.lang_code + '.patch'
         self.lst_file_entry = '/'.join(self.path_lst2)
         self.source_makefile = '/'.join(self.path_lst[:-1]) + '/Makefile'
         self.target_makefile = self.target_lang + '/' + \
-                               '/'.join(self.path_lst[1:-1]) + '/Makefile'
+            '/'.join(self.path_lst[1:-1]) + '/Makefile'
 
     def check_target_file(self):
         # Check specified file to be a valid (wml, src) page
         self.path_lst = self.path.split('/')
         if 'wml' not in self.path_lst[-1] and 'src' not in self.path_lst[-1]:
-            print(colors.error + "Specified file doesn't seem to be a valid " \
+            print(colors.error + "Specified file doesn't seem to be a valid "
                   "page.")
             sys.exit(1)
 
@@ -149,7 +154,7 @@ class Configuration(object):
 
     def make_diff(self):
         return 'diff ' + self.diff_args + ' ' + self.path + ' ' + \
-            self.target_file + ' > ' +  self.patch_file
+            self.target_file + ' > ' + self.patch_file
 
 
 def check_status(target_file):
@@ -168,9 +173,9 @@ def check_status(target_file):
                 return
         if 'Repository revision' in entry:
             if 'Attic' in entry.split()[-1]:
-                print(colors.error + "An old translation exists in the " \
+                print(colors.error + "An old translation exists in the "
                       "Attic, you should restore it using:")
-                print(colors.info +"cvs update -j DELETED -j PREVIOUS" + \
+                print(colors.info + "cvs update -j DELETED -j PREVIOUS" +
                       target_file)
                 print(colors.info + "Edit and update the file")
                 print(colors.info + "cvs ci " + target_file)
@@ -178,6 +183,7 @@ def check_status(target_file):
     print(colors.error + "A translation already exists in CVS for this file.")
     print(colors.error + "Please update your CVS copy using 'cvs update'.")
     sys.exit(1)
+
 
 def copy_original(config):
     print(colors.info + "Copying " + config.path)
@@ -209,13 +215,16 @@ def copy_original(config):
             dest_file.write(line)
     dest_file.close()
 
+
 def run_editor(editor, target_file):
     print(colors.info + "Running editor to edit " + target_file)
     subprocess.call([editor, target_file])
 
+
 def run_diff(diff_string):
     print(colors.info + "Running " + diff_string)
     subprocess.call(diff_string, shell=True)
+
 
 def simplify(data):
     matched = ''
@@ -225,7 +234,7 @@ def simplify(data):
         simplification = False
         for item in data[0:]:
             if len(item) - 1 >= num:
-                if  data[1][num] == item[num]:
+                if data[1][num] == item[num]:
                     simplification = True
                 elif data[1][num] != item[num]:
                     simplification = False
@@ -238,6 +247,7 @@ def simplify(data):
     for item in data:
         nonmatched.append(item[nonmatch_num:])
     return matched, nonmatched
+
 
 def reverse(list_str):
     pre_output = []
@@ -253,6 +263,7 @@ def reverse(list_str):
             for item in entry:
                 output_lst.append(item[::-1])
     return output_lst, output_str
+
 
 def make_pseudolink(list_file, lst_file_entry):
     if os.path.exists(list_file):
@@ -278,21 +289,22 @@ def make_pseudolink(list_file, lst_file_entry):
     tmp_list_file.close()
     print(colors.success + result)
 
+
 if __name__ == '__main__':
     # Command-line arguments parser
-    parser = argparse.ArgumentParser(description="Copies the specified page " \
-                                     "to the corresponding directory of the " \
-                                     "specified language and adds the " \
-                                     "translation-check header with the " \
-                                     "current revision, optionally adds also " \
-                                     "the MAINTAINER name. If the directory " \
-                                     "does not exist, it will be created, " \
-                                     "and the Makefile created. If the " \
-                                     "translation of the file already exists " \
-                                     "in the target language directory " \
+    parser = argparse.ArgumentParser(description="Copies the specified page "
+                                     "to the corresponding directory of the "
+                                     "specified language and adds the "
+                                     "translation-check header with the "
+                                     "current revision, optionally adds also "
+                                     "the MAINTAINER name. If the directory "
+                                     "does not exist, it will be created, "
+                                     "and the Makefile created. If the "
+                                     "translation of the file already exists "
+                                     "in the target language directory "
                                      "either because it was removed (and is "
-                                     "in the Attic) or has been removed " \
-                                     "locally the program will abort and " \
+                                     "in the Attic) or has been removed "
+                                     "locally the program will abort and "
                                      "warn the user (unless '-nu' is used)")
 
     parser.add_argument('path', metavar='path', type=str,
